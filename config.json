@@ -5,7 +5,8 @@
   "siteTitle": "Арина Крапивина",
   "siteTagline": "Исследования и заметки на полях от практикующего психолога, гипнотерапевта, лектора",
   "siteDescription": "Лекции и заметки практикующего психолога, гипнотерапевта и лектора Арины Крапивиной: видео с YouTube вместе с полными текстовыми расшифровками.",
-  "baseUrl": "https://ivkrapivin.github.io/arinatoldme",
+  "baseUrl": "https://youtube.arinatold.me",
+  "customDomain": "youtube.arinatold.me",
   "lang": "ru",
   "locales": ["ru"],
   "minDurationSec": 0

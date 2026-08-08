@@ -409,6 +409,11 @@ function main() {
   );
   // GitHub Pages иначе прогоняет вывод через Jekyll и съедает часть файлов.
   fs.writeFileSync(path.join(DIST, '.nojekyll'), '');
+  // При деплое через Actions привязка домена живёт в артефакте, а не в настройках:
+  // без CNAME в сборке Pages сбрасывает домен на *.github.io при каждом прогоне.
+  if (config.customDomain) {
+    fs.writeFileSync(path.join(DIST, 'CNAME'), config.customDomain + '\n');
+  }
 
   const edited = items.filter((i) => i.article.quality === 'edited').length;
   console.log(`Собрано страниц: ${items.length} (из них с LLM-редактурой: ${edited})`);
