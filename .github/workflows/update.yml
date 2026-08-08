@@ -1,0 +1,83 @@
+name: Обновление сайта
+
+on:
+  schedule:
+    # Каждый понедельник в 06:00 UTC (09:00 МСК). Время в cron — всегда UTC.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Переобработать все видео заново (дорого)
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'site/**'
+      - 'config.json'
+      - '.github/workflows/update.yml'
+
+# Нужны права на коммит новых транскриптов и на публикацию в Pages.
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: arina-site
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Установить yt-dlp
+        run: |
+          sudo curl -sSL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
+          yt-dlp --version
+
+      - name: Забрать новые видео и субтитры
+        run: node scripts/fetch.mjs ${{ inputs.force && '--force' || '' }}
+
+      - name: Отредактировать транскрипты
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/polish.mjs ${{ inputs.force && '--force' || '' }}
+
+      - name: Сохранить транскрипты в репозиторий
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --staged --quiet; then
+            echo "Новых видео нет — коммитить нечего."
+          else
+            git commit -m "Обновление транскриптов $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - name: Собрать сайт
+        run: node scripts/build.mjs
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: update
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

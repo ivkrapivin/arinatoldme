@@ -1,0 +1,353 @@
+/* Простая читаемая тема: одна колонка, крупный текст, светлая и тёмная схемы. */
+
+:root {
+  --bg: #fbfaf8;
+  --bg-soft: #f2efea;
+  --surface: #ffffff;
+  --text: #23201d;
+  --text-muted: #6d665e;
+  --line: #e2ddd5;
+  --accent: #8a5a3b;
+  --accent-soft: #f0e6de;
+  --radius: 12px;
+  --measure: 40rem;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16151a;
+    --bg-soft: #1e1d23;
+    --surface: #201f26;
+    --text: #ece8e2;
+    --text-muted: #a19a92;
+    --line: #34323b;
+    --accent: #d9a77e;
+    --accent-soft: #2c2620;
+  }
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 1.125rem;
+  line-height: 1.7;
+  text-rendering: optimizeLegibility;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+}
+a:hover { text-decoration-thickness: 2px; }
+
+.wrap {
+  width: 100%;
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+.wrap--wide { max-width: 56rem; }
+
+/* Шапка */
+
+.site-header {
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
+.site-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.25rem;
+  padding-block: 1rem;
+}
+
+.site-header__title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.site-header__title a { color: inherit; text-decoration: none; }
+
+.site-header nav {
+  display: flex;
+  gap: 1rem;
+  margin-inline-start: auto;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9rem;
+}
+
+/* Заглавный блок */
+
+.hero { padding-block: 3rem 2rem; }
+
+.hero h1 {
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  line-height: 1.15;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.15rem;
+}
+
+/* Список видео */
+
+.video-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2.5rem;
+}
+
+.card {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 44rem) {
+  .card { grid-template-columns: 15rem minmax(0, 1fr); align-items: start; }
+}
+
+.card__thumb {
+  display: block;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-soft);
+  position: relative;
+  aspect-ratio: 16 / 9;
+}
+
+.card__thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.card__duration {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 5px;
+}
+
+.card__title {
+  margin: 0 0 0.4rem;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.card__title a { color: inherit; text-decoration: none; }
+.card__title a:hover { color: var(--accent); }
+
+.card__summary { margin: 0 0 0.6rem; color: var(--text-muted); font-size: 1rem; }
+
+.meta {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  margin: 0;
+  list-style: none;
+  padding: 0;
+}
+
+/* Страница видео */
+
+.article { padding-block: 2rem 4rem; }
+
+.article h1 {
+  font-size: clamp(1.7rem, 5vw, 2.4rem);
+  line-height: 1.2;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.player {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+  margin-block: 1.5rem;
+}
+
+.player iframe,
+.player button {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Превью вместо iframe: YouTube не грузится и не ставит куки, пока не нажали play. */
+.player button {
+  padding: 0;
+  cursor: pointer;
+  background: none;
+  display: grid;
+  place-items: center;
+}
+
+.player button img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+
+.player button::after {
+  content: "";
+  position: relative;
+  width: 68px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(200, 30, 30, 0.92) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") no-repeat center / 26px;
+}
+
+.player button:hover::after { background-color: rgb(230, 33, 33); }
+
+.callout {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.4rem;
+  margin-block: 2rem;
+}
+
+.callout h2 {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 0.6rem;
+}
+
+.callout p { margin: 0; }
+.callout ul { margin: 0; padding-inline-start: 1.2rem; }
+.callout li { margin-block: 0.4rem; }
+
+.topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+}
+
+.topics li {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8rem;
+  background: var(--accent-soft);
+  color: var(--text);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+/* Оглавление */
+
+.toc { margin-block: 2rem; }
+
+.toc summary {
+  cursor: pointer;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.toc ol {
+  margin: 0.75rem 0 0;
+  padding-inline-start: 1.3rem;
+  font-size: 1rem;
+}
+
+.toc li { margin-block: 0.3rem; }
+
+/* Транскрипт */
+
+.transcript { margin-top: 2.5rem; }
+
+.transcript h2 {
+  font-size: 1.35rem;
+  line-height: 1.3;
+  margin: 2.5rem 0 0.5rem;
+  scroll-margin-top: 1.5rem;
+}
+
+.transcript p { margin-block: 1.15rem; }
+
+.transcript .stamp {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  display: inline-block;
+  margin-inline-start: 0.5rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.transcript .stamp:hover { color: var(--accent); }
+
+.section-note {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-inline-start: 3px solid var(--line);
+  padding-inline-start: 0.9rem;
+  margin-block: 1.5rem;
+}
+
+/* Подвал */
+
+.site-footer {
+  border-top: 1px solid var(--line);
+  margin-top: 4rem;
+  padding-block: 2rem 3rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.site-footer p { margin-block: 0.4rem; }
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 10;
+  background: var(--surface);
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+}
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+@media print {
+  .player, .site-header nav, .toc { display: none; }
+}
