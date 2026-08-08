@@ -35,4 +35,14 @@ http
     res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' });
     fs.createReadStream(file).pipe(res);
   })
+  .on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(
+        `Порт ${port} уже занят — скорее всего сайт там уже открыт: http://localhost:${port}/\n` +
+          `Другой порт: npm run serve -- ${port + 1}`,
+      );
+      process.exit(1);
+    }
+    throw err;
+  })
   .listen(port, () => console.log(`http://localhost:${port}/`));
