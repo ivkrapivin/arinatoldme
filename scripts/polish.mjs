@@ -93,13 +93,55 @@ async function callClaude({ system, messages, maxTokens = 16000 }) {
   }
 }
 
+/**
+ * Достаёт JSON из ответа модели.
+ *
+ * Модель иногда возвращает несколько объектов подряд или добавляет текст вокруг,
+ * поэтому нельзя просто резать от первой "{" до последней "}" — получится склейка.
+ * Сканируем по балансу скобок (пропуская скобки внутри строк), парсим каждый
+ * найденный объект и берём самый содержательный.
+ */
 function extractJSON(text) {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   const raw = fenced ? fenced[1] : text;
-  const start = raw.indexOf('{');
-  const end = raw.lastIndexOf('}');
-  if (start === -1 || end === -1) throw new Error('в ответе модели нет JSON');
-  return JSON.parse(raw.slice(start, end + 1));
+
+  const candidates = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === '{') {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === '}') {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        try {
+          candidates.push(JSON.parse(raw.slice(start, i + 1)));
+        } catch {
+          // Незакрытый или битый объект — просто пропускаем.
+        }
+        start = -1;
+      }
+    }
+  }
+
+  if (!candidates.length) throw new Error('в ответе модели нет валидного JSON');
+
+  // Полезная нагрузка — та, где есть непустые sections (или ключи карточки).
+  const score = (o) =>
+    (o.sections?.length || 0) * 100 + (o.summary ? 10 : 0) + (o.takeaways?.length || 0);
+  return candidates.sort((a, b) => score(b) - score(a))[0];
 }
 
 const EDIT_SYSTEM = `Ты — редактор, который превращает автоматическую расшифровку устной лекции в читаемый текст.
@@ -134,12 +176,25 @@ ${index > 0 ? 'Не повторяй вводных приветствий: фр
 Расшифровка:
 ${text}`;
 
-  const answer = await callClaude({
-    system: EDIT_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-  const parsed = extractJSON(answer);
-  return (parsed.sections || []).filter((s) => s.paragraphs?.length);
+  // Разбор ответа изредка падает на неожиданном формате — пробуем ещё раз,
+  // иначе из-за одного фрагмента теряется кусок лекции.
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const answer = await callClaude({
+      system: EDIT_SYSTEM,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    try {
+      const parsed = extractJSON(answer);
+      const sections = (parsed.sections || []).filter((s) => s.paragraphs?.length);
+      if (sections.length) return sections;
+      lastError = new Error('модель вернула пустые sections');
+    } catch (err) {
+      lastError = err;
+    }
+    console.warn(`  ⚠ разбор не удался (${lastError.message}), попытка ${attempt + 1}`);
+  }
+  throw lastError;
 }
 
 async function summarize({ title, description, sections }) {
