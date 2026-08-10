@@ -60,6 +60,8 @@ function layout({ title, description, canonical, head = '', body, wide = false }
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
 <link rel="canonical" href="${canonical}">
+<link rel="icon" href="${BASE}/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="${BASE}/icon-256.png">
 <link rel="stylesheet" href="${BASE}/styles.css">
 <link rel="alternate" type="application/rss+xml" title="${escapeHtml(config.siteTitle)}" href="${BASE}/rss.xml">
 <meta property="og:type" content="website">
@@ -419,7 +421,9 @@ function main() {
   }
 
   fs.writeFileSync(path.join(DIST, 'index.html'), renderIndex(items));
-  fs.copyFileSync(path.join(ROOT, 'site', 'styles.css'), path.join(DIST, 'styles.css'));
+  for (const asset of ['styles.css', 'favicon.ico', 'icon-256.png']) {
+    fs.copyFileSync(path.join(ROOT, 'site', asset), path.join(DIST, asset));
+  }
 
   for (const { video, article } of items) {
     const dir = path.join(DIST, 'v', video.slug);
