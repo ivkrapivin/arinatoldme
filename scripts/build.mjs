@@ -203,7 +203,7 @@ function renderVideoPage(video, article) {
   };
 
   const body = `<article class="article">
-<div class="wrap">
+<div class="wrap wrap--wide">
   <h1>${escapeHtml(video.title)}</h1>
   <ul class="meta">
     ${video.publishedAt ? `<li>${formatDate(video.publishedAt)}</li>` : ''}
@@ -212,7 +212,7 @@ function renderVideoPage(video, article) {
   </ul>
 </div>
 
-<div class="wrap">
+<div class="wrap wrap--wide">
   <div class="player">
     <button type="button" data-video="${video.id}" aria-label="Смотреть видео на YouTube">
       <img src="${escapeHtml(video.thumbnail)}" alt="" width="1280" height="720">
@@ -298,6 +298,7 @@ document.querySelectorAll('.player button').forEach(function (btn) {
       `<meta property="og:image" content="${escapeHtml(video.thumbnail)}">\n` +
       `<link rel="alternate" type="text/markdown" href="${BASE}/v/${video.slug}.md">\n` +
       `<script type="application/ld+json">${JSON.stringify(ld, (k, v) => (v === undefined ? undefined : v))}</script>`,
+    wide: true,
     body,
   });
 }
