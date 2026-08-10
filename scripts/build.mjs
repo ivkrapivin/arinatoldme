@@ -17,6 +17,26 @@ import {
 
 const BASE = config.baseUrl.replace(/\/$/, '');
 
+/**
+ * Счётчик GA4. Ставится только на боевой сборке: на localhost он бы засорял
+ * статистику собственными заходами во время правок.
+ */
+const GA_ID = /^G-[A-Z0-9]+$/i.test(config.analytics?.ga4MeasurementId || '')
+  ? config.analytics.ga4MeasurementId
+  : null;
+const IS_LOCAL = /localhost|127\.0\.0\.1/.test(BASE);
+
+const ANALYTICS_SNIPPET =
+  GA_ID && !IS_LOCAL
+    ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', ${JSON.stringify(GA_ID)});
+</script>`
+    : '';
+
 /** "1:23:45" или "12:30" → секунды, для ссылок вида ?t=NNN. */
 function tcToSeconds(tc) {
   if (!tc) return 0;
@@ -42,6 +62,7 @@ function layout({ title, description, canonical, head = '', body, wide = false }
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:url" content="${canonical}">
 <meta name="twitter:card" content="summary_large_image">
+${ANALYTICS_SNIPPET}
 ${head}
 </head>
 <body>
