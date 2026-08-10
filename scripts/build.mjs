@@ -8,6 +8,7 @@
  *
  * Плюс index.html, sitemap.xml, robots.txt, rss.xml и llms.txt.
  */
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -25,6 +26,18 @@ const GA_ID = /^G-[A-Z0-9]+$/i.test(config.analytics?.ga4MeasurementId || '')
   ? config.analytics.ga4MeasurementId
   : null;
 const IS_LOCAL = /localhost|127\.0\.0\.1/.test(BASE);
+
+/**
+ * Версия по содержимому файла. Браузеры кэшируют favicon особенно упорно — и
+ * запоминают даже его отсутствие, — поэтому адрес должен меняться вместе с файлом.
+ */
+function assetVersion(name) {
+  const buf = fs.readFileSync(path.join(ROOT, 'site', name));
+  return crypto.createHash('sha1').update(buf).digest('hex').slice(0, 8);
+}
+
+const ICON_V = assetVersion('favicon.ico');
+const TOUCH_V = assetVersion('icon-256.png');
 
 // Подтверждение прав в Search Console. Живёт в конфиге, а не отдельным файлом
 // в dist/: каталог пересобирается с нуля каждый прогон, и ручной файл бы пропал.
@@ -60,8 +73,8 @@ function layout({ title, description, canonical, head = '', body, wide = false }
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
 <link rel="canonical" href="${canonical}">
-<link rel="icon" href="${BASE}/favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="${BASE}/icon-256.png">
+<link rel="icon" href="${BASE}/favicon.ico?v=${ICON_V}" sizes="any">
+<link rel="apple-touch-icon" href="${BASE}/icon-256.png?v=${TOUCH_V}">
 <link rel="stylesheet" href="${BASE}/styles.css">
 <link rel="alternate" type="application/rss+xml" title="${escapeHtml(config.siteTitle)}" href="${BASE}/rss.xml">
 <meta property="og:type" content="website">
