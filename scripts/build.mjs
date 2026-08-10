@@ -26,6 +26,12 @@ const GA_ID = /^G-[A-Z0-9]+$/i.test(config.analytics?.ga4MeasurementId || '')
   : null;
 const IS_LOCAL = /localhost|127\.0\.0\.1/.test(BASE);
 
+// Подтверждение прав в Search Console. Живёт в конфиге, а не отдельным файлом
+// в dist/: каталог пересобирается с нуля каждый прогон, и ручной файл бы пропал.
+const VERIFY_TAG = config.googleSiteVerification
+  ? `<meta name="google-site-verification" content="${escapeHtml(config.googleSiteVerification)}">`
+  : '';
+
 const ANALYTICS_SNIPPET =
   GA_ID && !IS_LOCAL
     ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
@@ -62,6 +68,7 @@ function layout({ title, description, canonical, head = '', body, wide = false }
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:url" content="${canonical}">
 <meta name="twitter:card" content="summary_large_image">
+${VERIFY_TAG}
 ${ANALYTICS_SNIPPET}
 ${head}
 </head>

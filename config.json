@@ -10,6 +10,7 @@
   "lang": "ru",
   "locales": ["ru"],
   "minDurationSec": 0,
+  "googleSiteVerification": "",
   "analytics": {
     "comment": "Тот же Measurement ID, что стоит на arinatold.me в Тильде: поддомены делят куки корневого домена, поэтому переход между сайтами остаётся одной сессией. Разделять сайты в отчётах — измерением Hostname.",
     "ga4MeasurementId": ""
