@@ -8,6 +8,7 @@
     "fetch": "node scripts/fetch.mjs",
     "polish": "node scripts/polish.mjs",
     "build": "node scripts/build.mjs",
+    "sync": "node scripts/sync.mjs",
     "all": "npm run fetch && npm run polish && npm run build",
     "serve": "node scripts/serve.mjs"
   }
