@@ -31,6 +31,8 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    outputs:
+      fetch_outcome: ${{ steps.fetch.outcome }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +46,12 @@ jobs:
           sudo chmod a+rx /usr/local/bin/yt-dlp
           yt-dlp --version
 
+      # Провал выкачки не должен обрывать прогон: остальные видео уже собраны и
+      # заслуживают публикации. Но и потеряться он не должен — итог шага
+      # прокидывается в job "report", который красит прогон в красный.
       - name: Забрать новые видео и субтитры
+        id: fetch
+        continue-on-error: true
         run: node scripts/fetch.mjs ${{ inputs.force && '--force' || '' }}
 
       - name: Отредактировать транскрипты
@@ -81,3 +88,15 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Сайт уже опубликован, но если часть видео не скачалась — прогон обязан быть
+  # красным, иначе про пропущенную лекцию никто не узнает.
+  report:
+    needs: [update, deploy]
+    if: always() && needs.update.outputs.fetch_outcome == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Сообщить о недокачанных видео
+        run: |
+          echo "::error::Часть видео не скачалась с YouTube — см. шаг «Забрать новые видео» в job update. Сайт опубликован без них. Частая причина: YouTube блокирует запросы с серверов GitHub («Sign in to confirm you're not a bot»); тогда выкачку надо запустить локально: node scripts/fetch.mjs"
+          exit 1
