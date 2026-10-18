@@ -187,7 +187,63 @@ function renderTranscript(video, article) {
   return out.join('\n');
 }
 
-function renderVideoPage(video, article) {
+/** Темы и заголовок, разложенные в набор слов, — основа для поиска близких лекций. */
+function keywordsOf({ video, article }) {
+  const source = [...(article.topics || []), video.title].join(' ').toLowerCase();
+  return new Set(
+    source
+      .split(/[^а-яёa-z0-9]+/i)
+      // Короткие слова и предлоги роднят что угодно с чем угодно.
+      .filter((w) => w.length > 4),
+  );
+}
+
+/**
+ * Соседние и близкие лекции для перекрёстных ссылок.
+ *
+ * Соседние берутся по дате, близкие — по пересечению слов в темах и заголовке.
+ * Нужно не только читателю: страницы перестают висеть гроздью на главной и
+ * начинают ссылаться друг на друга, а связный граф краулер обходит охотнее.
+ */
+function relatedFor(index, items) {
+  // items отсортированы от новых к старым
+  const newer = items[index - 1] || null;
+  const older = items[index + 1] || null;
+  const own = keywordsOf(items[index]);
+
+  const similar = items
+    .map((it, i) => ({ it, i }))
+    .filter(({ i }) => i !== index && i !== index - 1 && i !== index + 1)
+    .map(({ it }) => {
+      const shared = [...keywordsOf(it)].filter((w) => own.has(w)).length;
+      return { it, shared };
+    })
+    .filter((x) => x.shared > 1)
+    .sort((a, b) => b.shared - a.shared)
+    .slice(0, 3)
+    .map((x) => x.it);
+
+  return { newer, older, similar };
+}
+
+function renderRelated({ newer, older, similar }) {
+  const link = (it, label) =>
+    `<li><span class="related__label">${label}</span><a href="${BASE}/v/${it.video.slug}/">${escapeHtml(it.video.title)}</a></li>`;
+
+  const rows = [
+    older ? link(older, 'Предыдущая лекция') : '',
+    newer ? link(newer, 'Следующая лекция') : '',
+    ...similar.map((it) => link(it, 'По теме')),
+  ].filter(Boolean);
+
+  if (!rows.length) return '';
+  return `<nav class="related" aria-label="Другие лекции">
+    <h2>Читать дальше</h2>
+    <ul>${rows.join('')}</ul>
+  </nav>`;
+}
+
+function renderVideoPage(video, article, related) {
   const plainText = article.sections.flatMap((s) => s.paragraphs).join(' ');
   const desc =
     article.seoDescription ||
@@ -281,6 +337,8 @@ function renderVideoPage(video, article) {
       : ''
   }
 
+  ${renderRelated(related)}
+
   <p class="meta" style="margin-top:2.5rem">
     <a href="${video.url}" rel="noopener">Смотреть на YouTube</a> ·
     <a href="${BASE}/v/${video.slug}.md">Версия в markdown</a> ·
@@ -317,7 +375,7 @@ document.querySelectorAll('.player button').forEach(function (btn) {
 }
 
 /** Markdown-двойник страницы: то, что удобно скормить модели или скачать. */
-function renderMarkdown(video, article) {
+function renderMarkdown(video, article, related) {
   const lines = [
     `# ${video.title}`,
     '',
@@ -342,6 +400,15 @@ function renderMarkdown(video, article) {
     else if (s.start) lines.push(`### ${s.start}`, '');
     for (const p of s.paragraphs) lines.push(p, '');
   }
+
+  const { newer, older, similar } = related;
+  const also = [
+    older ? `- Предыдущая лекция: [${older.video.title}](${BASE}/v/${older.video.slug}.md)` : null,
+    newer ? `- Следующая лекция: [${newer.video.title}](${BASE}/v/${newer.video.slug}.md)` : null,
+    ...similar.map((it) => `- По теме: [${it.video.title}](${BASE}/v/${it.video.slug}.md)`),
+  ].filter(Boolean);
+  if (also.length) lines.push('## Другие лекции', '', ...also, '');
+
   return lines.join('\n');
 }
 
@@ -439,12 +506,16 @@ function main() {
     fs.copyFileSync(path.join(ROOT, 'site', asset), path.join(DIST, asset));
   }
 
-  for (const { video, article } of items) {
+  items.forEach(({ video, article }, i) => {
+    const related = relatedFor(i, items);
     const dir = path.join(DIST, 'v', video.slug);
     ensureDir(dir);
-    fs.writeFileSync(path.join(dir, 'index.html'), renderVideoPage(video, article));
-    fs.writeFileSync(path.join(DIST, 'v', `${video.slug}.md`), renderMarkdown(video, article));
-  }
+    fs.writeFileSync(path.join(dir, 'index.html'), renderVideoPage(video, article, related));
+    fs.writeFileSync(
+      path.join(DIST, 'v', `${video.slug}.md`),
+      renderMarkdown(video, article, related),
+    );
+  });
 
   fs.writeFileSync(path.join(DIST, 'sitemap.xml'), renderSitemap(items));
   fs.writeFileSync(path.join(DIST, 'rss.xml'), renderRss(items));
